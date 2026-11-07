@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDown,
@@ -107,17 +107,25 @@ export default function TrackerPage() {
     [records],
   );
 
-  const handleMove = (scholarshipId: string, stage: ApplicationStage): void => {
-    const name = getScholarshipById(scholarshipId)?.title ?? 'Application';
-    moveApplication(scholarshipId, stage);
-    toast.info('Application moved', `${name} → ${stageMeta(stage).label}`);
-  };
+  const handleMove = useCallback(
+    (scholarshipId: string, stage: ApplicationStage): void => {
+      const name = getScholarshipById(scholarshipId)?.title ?? 'Application';
+      moveApplication(scholarshipId, stage);
+      toast.info('Application moved', `${name} → ${stageMeta(stage).label}`);
+    },
+    [moveApplication],
+  );
 
-  const handleRemove = (scholarshipId: string): void => {
-    const name = getScholarshipById(scholarshipId)?.title ?? 'Application';
-    removeApplication(scholarshipId);
-    toast.info('Application removed', `${name} is no longer tracked.`);
-  };
+  const handleRemove = useCallback(
+    (scholarshipId: string): void => {
+      const name = getScholarshipById(scholarshipId)?.title ?? 'Application';
+      removeApplication(scholarshipId);
+      toast.info('Application removed', `${name} is no longer tracked.`);
+    },
+    [removeApplication],
+  );
+
+  const handleCloseModal = useCallback(() => setActiveId(null), []);
 
   return (
     <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6">
@@ -185,7 +193,7 @@ export default function TrackerPage() {
               <section
                 key={column.key}
                 aria-labelledby={`tracker-stage-${column.key}`}
-                className="flex flex-col gap-3 rounded-xl border border-border bg-muted/30 p-3"
+                className="flex min-h-[180px] flex-col gap-3 rounded-xl border border-border bg-muted/30 p-3"
               >
                 <header className="flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-2">
@@ -225,12 +233,12 @@ export default function TrackerPage() {
                           key={record.scholarshipId}
                           record={record}
                           item={scoredById.get(record.scholarshipId)}
-                          onOpen={() => setActiveId(record.scholarshipId)}
-                          onMove={(stage) => handleMove(record.scholarshipId, stage)}
-                          onRemove={() => handleRemove(record.scholarshipId)}
-                          onToggleItem={(label) => toggleChecklistItem(record.scholarshipId, label)}
-                          onToggleReminder={() => toggleReminder(record.scholarshipId)}
-                          onSaveNotes={(notes) => setApplicationNotes(record.scholarshipId, notes)}
+                          onOpen={setActiveId}
+                          onMove={handleMove}
+                          onRemove={handleRemove}
+                          onToggleItem={toggleChecklistItem}
+                          onToggleReminder={toggleReminder}
+                          onSaveNotes={setApplicationNotes}
                         />
                       ))}
                     </AnimatePresence>
@@ -242,7 +250,7 @@ export default function TrackerPage() {
         </div>
       )}
 
-      <LazyScholarshipModal scholarshipId={activeId} onClose={() => setActiveId(null)} />
+      <LazyScholarshipModal scholarshipId={activeId} onClose={handleCloseModal} />
     </div>
   );
 }
@@ -251,16 +259,17 @@ interface TrackerCardProps {
   record: ApplicationRecord;
   /** The scored scholarship, or `undefined` if it is no longer in the dataset. */
   item: ScoredScholarship | undefined;
-  onOpen: () => void;
-  onMove: (stage: ApplicationStage) => void;
-  onRemove: () => void;
-  onToggleItem: (label: string) => void;
-  onToggleReminder: () => void;
-  onSaveNotes: (notes: string) => void;
+  /** Every callback receives the scholarship id so the parent can keep them stable. */
+  onOpen: (scholarshipId: string) => void;
+  onMove: (scholarshipId: string, stage: ApplicationStage) => void;
+  onRemove: (scholarshipId: string) => void;
+  onToggleItem: (scholarshipId: string, label: string) => void;
+  onToggleReminder: (scholarshipId: string) => void;
+  onSaveNotes: (scholarshipId: string, notes: string) => void;
 }
 
 /** A single draggable-equivalent application card inside a Kanban column. */
-function TrackerCard({
+function TrackerCardComponent({
   record,
   item,
   onOpen,
@@ -272,6 +281,7 @@ function TrackerCard({
 }: TrackerCardProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  const scholarshipId = record.scholarshipId;
   const scholarship = item?.scholarship;
   const name = scholarship?.title ?? 'Scholarship unavailable';
 
@@ -364,7 +374,7 @@ function TrackerCard({
                 <Select
                   id={stageSelectId}
                   value={record.stage}
-                  onChange={(event) => onMove(event.target.value as ApplicationStage)}
+                  onChange={(event) => onMove(scholarshipId, event.target.value as ApplicationStage)}
                 >
                   {STAGES.map((stage) => (
                     <option key={stage.key} value={stage.key}>
@@ -378,7 +388,7 @@ function TrackerCard({
                 <RequirementChecklist
                   requirements={requirements}
                   completed={record.checklist}
-                  onToggle={onToggleItem}
+                  onToggle={(label) => onToggleItem(scholarshipId, label)}
                   idPrefix={`tracker-req-${record.scholarshipId}`}
                 />
               ) : null}
@@ -389,7 +399,7 @@ function TrackerCard({
                 </span>
                 <Switch
                   checked={record.reminderEnabled}
-                  onCheckedChange={onToggleReminder}
+                  onCheckedChange={() => onToggleReminder(scholarshipId)}
                   aria-labelledby={`${notesId}-reminder-label`}
                 />
               </div>
@@ -401,13 +411,13 @@ function TrackerCard({
                   rows={3}
                   maxLength={2000}
                   defaultValue={record.notes}
-                  onBlur={(event) => onSaveNotes(event.target.value)}
+                  onBlur={(event) => onSaveNotes(scholarshipId, event.target.value)}
                   placeholder="Contacts, portal passwords reminders, submission confirmations…"
                 />
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" leftIcon={<ExternalLink />} onClick={onOpen}>
+                <Button variant="outline" size="sm" leftIcon={<ExternalLink />} onClick={() => onOpen(scholarshipId)}>
                   Open details
                 </Button>
                 <Button
@@ -415,7 +425,7 @@ function TrackerCard({
                   size="sm"
                   className="text-danger hover:bg-danger/10 hover:text-danger"
                   leftIcon={<Trash2 />}
-                  onClick={onRemove}
+                  onClick={() => onRemove(scholarshipId)}
                 >
                   Remove
                 </Button>
@@ -432,7 +442,7 @@ function TrackerCard({
               variant="outline"
               size="sm"
               className="flex-1"
-              onClick={() => onMove(nextStage.key)}
+              onClick={() => onMove(scholarshipId, nextStage.key)}
               aria-label={`Move ${name} to ${nextStage.label}`}
             >
               {nextStage.label}
@@ -443,7 +453,7 @@ function TrackerCard({
               variant="ghost"
               size="sm"
               className="flex-1"
-              onClick={() => onMove(previousStage.key)}
+              onClick={() => onMove(scholarshipId, previousStage.key)}
               aria-label={`Move ${name} back to ${previousStage.label}`}
             >
               {previousStage.label}
@@ -454,3 +464,9 @@ function TrackerCard({
     </motion.li>
   );
 }
+
+/**
+ * Memoised: mutating one application (ticking a requirement, editing notes)
+ * therefore re-renders only that card, not every card on the board.
+ */
+const TrackerCard = memo(TrackerCardComponent);

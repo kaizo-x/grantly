@@ -96,7 +96,9 @@ export function Modal({
                 className,
               )}
             >
-              <header className="flex items-start gap-4 border-b border-border p-5">
+              {/* Plain `div`s rather than `header`/`footer`: inside a dialog those
+                  elements would expose duplicate banner/contentinfo landmarks. */}
+              <div className="flex items-start gap-4 border-b border-border p-5">
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <h2 id={titleId} className="text-lg font-semibold tracking-tight text-foreground">
                     {title}
@@ -120,14 +122,14 @@ export function Modal({
                 >
                   <X className="size-5" aria-hidden="true" />
                 </button>
-              </header>
+              </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">{children}</div>
 
               {footer ? (
-                <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-border bg-muted/40 p-4">
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border bg-muted/40 p-4">
                   {footer}
-                </footer>
+                </div>
               ) : null}
             </motion.div>
           </div>,

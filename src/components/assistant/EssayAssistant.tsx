@@ -124,7 +124,9 @@ export function EssayAssistant() {
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
             className="absolute right-0 top-0 flex h-full w-[min(28rem,100vw)] flex-col border-l border-border bg-card shadow-2xl"
           >
-            <header className="flex items-start gap-3 border-b border-border p-4">
+            {/* `div`, not `header`: inside a dialog a `header` would surface a
+                second `banner` landmark alongside the app's top bar. */}
+            <div className="flex items-start gap-3 border-b border-border p-4">
               <span
                 className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary"
                 aria-hidden="true"
@@ -152,7 +154,7 @@ export function EssayAssistant() {
               >
                 <X className="size-5" aria-hidden="true" />
               </button>
-            </header>
+            </div>
 
             <div
               ref={logRef}

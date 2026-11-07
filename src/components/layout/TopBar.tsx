@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Clock, Menu, Search, X } from 'lucide-react';
@@ -37,7 +37,8 @@ export function TopBar({ navOpen, onToggleNav }: TopBarProps) {
     [scored],
   );
 
-  const popoverRef = useDismissable<HTMLDivElement>(notificationsOpen, () => setNotificationsOpen(false));
+  const closeNotifications = useCallback(() => setNotificationsOpen(false), []);
+  const popoverRef = useDismissable<HTMLDivElement>(notificationsOpen, closeNotifications);
 
   const initials = profile.fullName
     .split(' ')
@@ -46,11 +47,16 @@ export function TopBar({ navOpen, onToggleNav }: TopBarProps) {
     .join('')
     .toUpperCase();
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    setFilters({ query });
-    navigate('/discover');
-  };
+  const handleSearch = useCallback(
+    (event: FormEvent<HTMLFormElement>): void => {
+      event.preventDefault();
+      setFilters({ query });
+      navigate('/discover');
+    },
+    [navigate, query, setFilters],
+  );
+
+  const handleToggleNotifications = useCallback(() => setNotificationsOpen((open) => !open), []);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
@@ -102,7 +108,7 @@ export function TopBar({ navOpen, onToggleNav }: TopBarProps) {
           <div className="relative" ref={popoverRef}>
             <button
               type="button"
-              onClick={() => setNotificationsOpen((open) => !open)}
+              onClick={handleToggleNotifications}
               aria-label={`Notifications: ${notifications.length} upcoming deadline${notifications.length === 1 ? '' : 's'}`}
               aria-expanded={notificationsOpen}
               aria-haspopup="dialog"
@@ -149,7 +155,7 @@ export function TopBar({ navOpen, onToggleNav }: TopBarProps) {
                         <li key={item.scholarship.id} className="border-b border-border last:border-0">
                           <Link
                             to="/discover"
-                            onClick={() => setNotificationsOpen(false)}
+                            onClick={closeNotifications}
                             className={cn(
                               'flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted',
                               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',

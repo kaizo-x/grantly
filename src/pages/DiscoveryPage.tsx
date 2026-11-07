@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import type { SortKey } from '../types';
@@ -80,6 +80,24 @@ export default function DiscoveryPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  /* Stable callbacks keep the memoised result cards from re-rendering on
+     unrelated state changes such as typing in the search box. */
+  const handleOpen = useCallback((scholarshipId: string) => setActiveId(scholarshipId), []);
+  const handleCloseModal = useCallback(() => setActiveId(null), []);
+  const handleToggleSaved = useCallback((scholarshipId: string) => toggleSaved(scholarshipId), [toggleSaved]);
+  const handleSearchSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+  }, []);
+  const handleTermChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setTerm(event.target.value.slice(0, 120));
+  }, []);
+  const handleClearSearch = useCallback(() => setTerm(''), []);
+  const handleSortChange = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => setFilters({ sortBy: event.target.value as SortKey }),
+    [setFilters],
+  );
+  const handleToggleFilters = useCallback(() => setShowFilters((open) => !open), []);
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <header className="flex flex-col gap-4">
@@ -92,7 +110,7 @@ export default function DiscoveryPage() {
           </div>
         </div>
 
-        <form role="search" onSubmit={(event) => event.preventDefault()} className="flex flex-col gap-3 sm:flex-row">
+        <form role="search" onSubmit={handleSearchSubmit} className="flex flex-col gap-3 sm:flex-row">
           <div className="min-w-0 flex-1">
             <Label htmlFor="discovery-search" className="sr-only">
               Search scholarships
@@ -101,7 +119,7 @@ export default function DiscoveryPage() {
               id="discovery-search"
               type="search"
               value={term}
-              onChange={(event) => setTerm(event.target.value.slice(0, 120))}
+              onChange={handleTermChange}
               placeholder="Search by scheme, provider, discipline or field…"
               autoComplete="off"
               maxLength={120}
@@ -110,7 +128,7 @@ export default function DiscoveryPage() {
                 term ? (
                   <button
                     type="button"
-                    onClick={() => setTerm('')}
+                    onClick={handleClearSearch}
                     aria-label="Clear search"
                     className={cn(
                       'grid size-8 place-items-center rounded-md text-muted-foreground',
@@ -133,7 +151,7 @@ export default function DiscoveryPage() {
               <Select
                 id="discovery-sort"
                 value={filters.sortBy}
-                onChange={(event) => setFilters({ sortBy: event.target.value as SortKey })}
+                onChange={handleSortChange}
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -148,7 +166,7 @@ export default function DiscoveryPage() {
               className="lg:hidden"
               aria-expanded={showFilters}
               aria-controls="discovery-filters"
-              onClick={() => setShowFilters((open) => !open)}
+              onClick={handleToggleFilters}
               leftIcon={<SlidersHorizontal />}
             >
               Filters
@@ -176,7 +194,9 @@ export default function DiscoveryPage() {
           </div>
         </aside>
 
-        <section aria-label="Search results" className="flex min-w-0 flex-col gap-4">
+        {/* `min-h` reserves the results footprint so the footer does not jump
+            upward when the skeleton grid is replaced by a shorter result set. */}
+        <section aria-label="Search results" className="flex min-h-[24rem] min-w-0 flex-col gap-4">
           <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
             {hydrating
               ? 'Loading scholarships…'
@@ -214,8 +234,8 @@ export default function DiscoveryPage() {
                       item={item}
                       saved={savedIds.includes(item.scholarship.id)}
                       tracked={Boolean(applications[item.scholarship.id])}
-                      onOpen={() => setActiveId(item.scholarship.id)}
-                      onToggleSaved={() => toggleSaved(item.scholarship.id)}
+                      onOpen={handleOpen}
+                      onToggleSaved={handleToggleSaved}
                     />
                   </motion.li>
                 ))}
@@ -225,7 +245,7 @@ export default function DiscoveryPage() {
         </section>
       </div>
 
-      <LazyScholarshipModal scholarshipId={activeId} onClose={() => setActiveId(null)} />
+      <LazyScholarshipModal scholarshipId={activeId} onClose={handleCloseModal} />
     </div>
   );
 }

@@ -229,7 +229,16 @@ export const useAppStore = create<AppStore>()(
       },
 
       /* -------------------------------- filters -------------------------- */
-      setFilters: (patch) => set((state) => ({ filters: { ...state.filters, ...patch } })),
+      setFilters: (patch) =>
+        set((state) => ({
+          filters: {
+            ...state.filters,
+            ...patch,
+            // The search box is free text — strip markup before it is stored so
+            // no downstream consumer can ever receive an unsanitised string.
+            ...(patch.query !== undefined ? { query: sanitizeText(patch.query) } : {}),
+          },
+        })),
 
       toggleArrayFilter: (key, value) =>
         set((state) => {

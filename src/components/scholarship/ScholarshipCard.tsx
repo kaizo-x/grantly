@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { BookmarkCheck, BookmarkPlus } from 'lucide-react';
 import type { ScoredScholarship } from '../../utils/filter';
 import { cn } from '../../utils/cn';
@@ -12,8 +13,10 @@ export interface ScholarshipCardProps {
   item: ScoredScholarship;
   saved: boolean;
   tracked: boolean;
-  onOpen: () => void;
-  onToggleSaved: () => void;
+  /** Called with the scholarship id so the parent can pass a stable reference. */
+  onOpen: (scholarshipId: string) => void;
+  /** Called with the scholarship id so the parent can pass a stable reference. */
+  onToggleSaved: (scholarshipId: string) => void;
   className?: string;
 }
 
@@ -25,7 +28,7 @@ export interface ScholarshipCardProps {
  * decorative content layer is `pointer-events-none` so that clicks anywhere
  * reach the overlay button, and every control keeps a `focus-visible` ring.
  */
-export function ScholarshipCard({
+function ScholarshipCardComponent({
   item,
   saved,
   tracked,
@@ -47,7 +50,7 @@ export function ScholarshipCard({
       {/* Full-bleed activation target for the detail modal */}
       <button
         type="button"
-        onClick={onOpen}
+        onClick={() => onOpen(scholarship.id)}
         aria-label={`View details for ${scholarship.title} from ${scholarship.provider}`}
         className={cn(
           'absolute inset-0 z-0 rounded-xl cursor-pointer',
@@ -102,7 +105,7 @@ export function ScholarshipCard({
       {/* Keep the save affordance above the overlay button. */}
       <button
         type="button"
-        onClick={onToggleSaved}
+        onClick={() => onToggleSaved(scholarship.id)}
         aria-pressed={saved}
         aria-label={saved ? `Remove ${scholarship.title} from your shortlist` : `Save ${scholarship.title} to your shortlist`}
         className={cn(
@@ -120,3 +123,10 @@ export function ScholarshipCard({
     </article>
   );
 }
+
+/**
+ * Memoised: with stable id-based callbacks from the parent, a re-render caused
+ * by unrelated state (typing in the search box, opening a panel) no longer
+ * re-renders the entire result grid or carousel.
+ */
+export const ScholarshipCard = memo(ScholarshipCardComponent);

@@ -45,11 +45,14 @@ export function RecommendationCarousel({
     syncEdges();
   }, [items.length, syncEdges]);
 
-  const scrollBy = (direction: 1 | -1): void => {
+  const scrollBy = useCallback((direction: 1 | -1): void => {
     const node = scrollerRef.current;
     if (!node) return;
     node.scrollBy({ left: direction * Math.max(280, node.clientWidth * 0.8), behavior: 'smooth' });
-  };
+  }, []);
+
+  const handleScrollLeft = useCallback(() => scrollBy(-1), [scrollBy]);
+  const handleScrollRight = useCallback(() => scrollBy(1), [scrollBy]);
 
   if (items.length === 0) return null;
 
@@ -70,7 +73,7 @@ export function RecommendationCarousel({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => scrollBy(-1)}
+            onClick={handleScrollLeft}
             disabled={atStart}
             aria-label="Scroll recommendations left"
             className={cn(
@@ -85,7 +88,7 @@ export function RecommendationCarousel({
           </button>
           <button
             type="button"
-            onClick={() => scrollBy(1)}
+            onClick={handleScrollRight}
             disabled={atEnd}
             aria-label="Scroll recommendations right"
             className={cn(
@@ -115,8 +118,8 @@ export function RecommendationCarousel({
               item={item}
               saved={savedIds.includes(item.scholarship.id)}
               tracked={Boolean(applications[item.scholarship.id])}
-              onOpen={() => onOpen(item.scholarship.id)}
-              onToggleSaved={() => toggleSaved(item.scholarship.id)}
+              onOpen={onOpen}
+              onToggleSaved={toggleSaved}
             />
           </li>
         ))}
