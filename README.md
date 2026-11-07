@@ -2,7 +2,7 @@
 
 > **The Outpost Hackathon Submission | Organized by Frontend Arena**
 > 
-> 🌐 **Live Demo:** [https://grantly-sigma.vercel.app](https://grantly-sigma.vercel.app/)  
+> 🌐 **Live Demo:** [https://grantly-rho.vercel.app](https://grantly-rho.vercel.app/)  
 > 📁 **GitHub Repository:** [https://github.com/kaizo-x/grantly](https://github.com/kaizo-x/grantly)
 
 ---
