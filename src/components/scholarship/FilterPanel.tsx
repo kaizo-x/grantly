@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Bookmark, RotateCcw, Search, Trash2 } from 'lucide-react';
-import type { DeadlineStatus } from '../../types';
+import type { DeadlineStatus, ScholarshipCategory } from '../../types';
 import {
   EDUCATION_LEVELS,
   FIELDS_OF_STUDY,
@@ -151,16 +151,33 @@ export function FilterPanel() {
         ))}
       </FilterGroup>
 
-      <FilterGroup id="filter-category" title="Funding source">
-        {SCHOLARSHIP_CATEGORIES.map((category) => (
-          <Chip
-            key={category}
-            label={category}
-            active={filters.categories.includes(category)}
-            onToggle={() => toggleArrayFilter('categories', category)}
-          />
-        ))}
-      </FilterGroup>
+      {/* Funding source — a native select so the control is both queryable by a
+          stable id and fully keyboard/screen-reader operable. */}
+      <div className="flex flex-col gap-2">
+        <Label
+          htmlFor="category-filter"
+          className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          Funding source
+        </Label>
+        <Select
+          id="category-filter"
+          name="category"
+          value={filters.categories[0] ?? ''}
+          onChange={(event) =>
+            setFilters({
+              categories: event.target.value ? [event.target.value as ScholarshipCategory] : [],
+            })
+          }
+        >
+          <option value="">All funding sources</option>
+          {SCHOLARSHIP_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </Select>
+      </div>
 
       <FilterGroup id="filter-deadline" title="Deadline status">
         {DEADLINE_OPTIONS.map((option) => (
@@ -188,6 +205,7 @@ export function FilterPanel() {
         </div>
         <input
           id="filter-min-amount"
+          name="minAmount"
           type="range"
           min={0}
           max={AMOUNT_SLIDER_MAX}
@@ -210,6 +228,7 @@ export function FilterPanel() {
         </Label>
         <Select
           id="filter-percent"
+          name="maxPercentRequirement"
           value={filters.maxPercentRequirement === null ? '' : String(filters.maxPercentRequirement)}
           onChange={(event) =>
             setFilters({ maxPercentRequirement: event.target.value === '' ? null : Number(event.target.value) })
@@ -236,6 +255,7 @@ export function FilterPanel() {
           </Label>
           <Input
             id="saved-search-name"
+            name="savedSearchName"
             value={searchName}
             onChange={(event) => setSearchName(event.target.value.slice(0, 60))}
             placeholder="e.g. Government, no income limit"

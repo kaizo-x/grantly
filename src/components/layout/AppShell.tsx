@@ -20,15 +20,19 @@ const MOBILE_LINKS = [
 export interface AppShellProps {
   /** The signed-in user, surfaced in the sidebar identity block. */
   user: GrantlyUser;
-  /** Clears the session key and returns the app to the Auth Gateway. */
+  /** Clears the session key and returns the app to the demo profile. */
   onLogout: () => void;
+  /** Opens the authentication dialog over the live dashboard. */
+  onOpenAuth: () => void;
+  /** Whether the authentication dialog is currently open. */
+  authOpen: boolean;
 }
 
 /**
  * Root layout: a persistent sapphire rail on desktop, a focus-trapped drawer on
  * mobile, plus the sticky top bar and the main content landmark.
  */
-export function AppShell({ user, onLogout }: AppShellProps) {
+export function AppShell({ user, onLogout, onOpenAuth, authOpen }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useFocusTrap<HTMLDivElement>(drawerOpen);
   useScrollLock(drawerOpen);
@@ -109,7 +113,14 @@ export function AppShell({ user, onLogout }: AppShellProps) {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar navOpen={drawerOpen} onToggleNav={() => setDrawerOpen((open) => !open)} onLogout={onLogout} />
+        <TopBar
+          navOpen={drawerOpen}
+          onToggleNav={() => setDrawerOpen((open) => !open)}
+          isDemo={user.isDemo}
+          onLogout={onLogout}
+          onOpenAuth={onOpenAuth}
+          authOpen={authOpen}
+        />
 
         <main
           id="main-content"

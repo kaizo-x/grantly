@@ -117,6 +117,7 @@ export default function DiscoveryPage() {
             </Label>
             <Input
               id="discovery-search"
+              name="search"
               type="search"
               value={term}
               onChange={handleTermChange}
@@ -150,6 +151,7 @@ export default function DiscoveryPage() {
               </Label>
               <Select
                 id="discovery-sort"
+                name="sort"
                 value={filters.sortBy}
                 onChange={handleSortChange}
               >

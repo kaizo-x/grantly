@@ -190,11 +190,18 @@ function Banner({ id, tone, children }: { id?: string; tone: 'success' | 'danger
 export interface AuthGatewayProps {
   /** Invoked once a session has been established and persisted. */
   onAuthenticated: (user: GrantlyUser) => void;
+  /**
+   * Renders the gateway without document-level chrome.
+   *
+   * Used when the gateway is embedded inside a dialog over the live dashboard:
+   * omitting its own `<header>`/`<footer>`/`<main>` avoids duplicate banner,
+   * contentinfo and main landmarks in the same document.
+   */
+  embedded?: boolean;
 }
 
 /**
- * The Welcome Gateway — the first and only screen a visitor without a session
- * ever sees.
+ * The Welcome Gateway — the sign-in, registration and judge-demo surface.
  *
  * Three views share one local `view` state: `welcome` (branding + entry points),
  * `login` and `register`. Registration never signs the student in; it writes the
@@ -202,7 +209,7 @@ export interface AuthGatewayProps {
  * register-then-login sequence is always exercised. The one-click demo button
  * writes the pre-populated judge session and enters the dashboard immediately.
  */
-export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
+export function AuthGateway({ onAuthenticated, embedded = false }: AuthGatewayProps) {
   const [view, setView] = useState<GatewayView>('welcome');
   const [notice, setNotice] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -211,11 +218,14 @@ export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
   const [registerErrors, setRegisterErrors] = useState<FieldErrors>({});
   const [loginFields, setLoginFields] = useState<LoginFields>({ email: '', password: '' });
 
-  /** Keep the document title in step, and land focus on each new view's heading. */
+  /**
+   * Keep the document title in step (only when the gateway owns the document),
+   * and land focus on each new view's heading.
+   */
   useEffect(() => {
-    document.title = VIEW_TITLES[view];
+    if (!embedded) document.title = VIEW_TITLES[view];
     document.getElementById('gateway-heading')?.focus({ preventScroll: true });
-  }, [view]);
+  }, [view, embedded]);
 
   const goTo = useCallback((next: GatewayView) => {
     setView(next);
@@ -311,27 +321,41 @@ export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
     [loginFields, onAuthenticated],
   );
 
-  return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <header className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <span
-            className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-indigo-900 text-primary-foreground"
-            aria-hidden="true"
-          >
-            <GraduationCap className="size-5.5" />
-          </span>
-          <span className="flex flex-col leading-tight">
-            <span className="text-base font-bold tracking-tight text-foreground">GRANTLY</span>
-            <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-              Scholarship Hub
-            </span>
-          </span>
-        </div>
-        <ThemeToggle />
-      </header>
+  // Inside a dialog the gateway must not introduce a second `<h1>`, `<main>`,
+  // `<header>` or `<footer>`; when embedded it renders as plain nested content.
+  const Heading = embedded ? 'h2' : 'h1';
+  const Viewport = embedded ? 'div' : 'main';
 
-      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center px-4 py-8 sm:px-6 lg:px-8">
+  return (
+    <div className={cn('flex flex-col bg-background', !embedded && 'min-h-dvh')}>
+      {embedded ? null : (
+        <header className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-indigo-900 text-primary-foreground"
+              aria-hidden="true"
+            >
+              <GraduationCap className="size-5.5" />
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-base font-bold tracking-tight text-foreground">GRANTLY</span>
+              <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                Scholarship Hub
+              </span>
+            </span>
+          </div>
+          <ThemeToggle />
+        </header>
+      )}
+
+      <Viewport
+        id={embedded ? undefined : 'main-content'}
+        tabIndex={embedded ? undefined : -1}
+        className={cn(
+          'flex flex-1 flex-col',
+          embedded ? 'px-0 py-1' : 'justify-center px-4 py-8 sm:px-6 lg:px-8',
+        )}
+      >
         <motion.div
           key={view}
           initial={{ opacity: 0, y: 10 }}
@@ -347,13 +371,13 @@ export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
                   Built for The Outpost · Frontend Arena
                 </span>
 
-                <h1
+                <Heading
                   id="gateway-heading"
                   tabIndex={-1}
                   className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-[2.6rem] lg:leading-tight"
                 >
                   GRANTLY — Rethinking Educational Financial Assistance in India
-                </h1>
+                </Heading>
 
                 <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
                   GRANTLY scores every verified Indian scholarship against your academic profile and family-income
@@ -435,9 +459,9 @@ export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
             <GatewayCard>
               <BackToWelcome onBack={() => goTo('welcome')} />
 
-              <h1 id="gateway-heading" tabIndex={-1} className="text-xl font-semibold tracking-tight text-foreground">
+              <Heading id="gateway-heading" tabIndex={-1} className="text-xl font-semibold tracking-tight text-foreground">
                 Log in to GRANTLY
-              </h1>
+              </Heading>
               <p className="mt-1 text-sm text-muted-foreground">
                 Use the credentials you registered on this device.
               </p>
@@ -514,9 +538,9 @@ export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
             <GatewayCard>
               <BackToWelcome onBack={() => goTo('welcome')} />
 
-              <h1 id="gateway-heading" tabIndex={-1} className="text-xl font-semibold tracking-tight text-foreground">
+              <Heading id="gateway-heading" tabIndex={-1} className="text-xl font-semibold tracking-tight text-foreground">
                 Register a new student
-              </h1>
+              </Heading>
               <p className="mt-1 text-sm text-muted-foreground">
                 Your details stay on this device and pre-fill the scholarship eligibility engine.
               </p>
@@ -651,13 +675,15 @@ export function AuthGateway({ onAuthenticated }: AuthGatewayProps) {
             </GatewayCard>
           ) : null}
         </motion.div>
-      </main>
+      </Viewport>
 
-      <footer className="px-4 py-6 sm:px-6 lg:px-8">
-        <p className="text-center text-xs text-muted-foreground">
-          GRANTLY — a demonstration scholarship discovery platform for Indian higher education. Data is illustrative.
-        </p>
-      </footer>
+      {embedded ? null : (
+        <footer className="px-4 py-6 sm:px-6 lg:px-8">
+          <p className="text-center text-xs text-muted-foreground">
+            GRANTLY — a demonstration scholarship discovery platform for Indian higher education. Data is illustrative.
+          </p>
+        </footer>
+      )}
     </div>
   );
 }

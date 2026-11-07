@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Clock, LogOut, Menu, Search, X } from 'lucide-react';
+import { Bell, Clock, LogIn, LogOut, Menu, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppStore } from '../../store/useAppStore';
 import { useScoredScholarships } from '../../hooks/useScholarships';
@@ -13,15 +13,21 @@ import { Avatar } from '../ui/Avatar';
 export interface TopBarProps {
   navOpen: boolean;
   onToggleNav: () => void;
-  /** Clears the session and returns the visitor to the Auth Gateway. */
+  /** True while the pre-populated demo profile is the active identity. */
+  isDemo: boolean;
+  /** Clears the session and falls back to the demo profile. */
   onLogout: () => void;
+  /** Opens the authentication dialog over the dashboard. */
+  onOpenAuth: () => void;
+  /** Whether the authentication dialog is open — drives `aria-expanded`. */
+  authOpen: boolean;
 }
 
 /**
  * Sticky application header: global search, notification centre, theme control
- * and the profile / sign-out affordances.
+ * and the profile / sign-in affordances.
  */
-export function TopBar({ navOpen, onToggleNav, onLogout }: TopBarProps) {
+export function TopBar({ navOpen, onToggleNav, isDemo, onLogout, onOpenAuth, authOpen }: TopBarProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -80,7 +86,7 @@ export function TopBar({ navOpen, onToggleNav, onLogout }: TopBarProps) {
         </button>
 
         <form role="search" onSubmit={handleSearch} className="min-w-0 flex-1">
-          <label htmlFor="global-search" className="sr-only">
+          <label htmlFor="search-input" className="sr-only">
             Search scholarships
           </label>
           <div className="relative">
@@ -89,7 +95,8 @@ export function TopBar({ navOpen, onToggleNav, onLogout }: TopBarProps) {
               aria-hidden="true"
             />
             <input
-              id="global-search"
+              id="search-input"
+              name="search"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -205,20 +212,39 @@ export function TopBar({ navOpen, onToggleNav, onLogout }: TopBarProps) {
             </span>
           </Link>
 
-          <button
-            type="button"
-            onClick={onLogout}
-            className={cn(
-              'flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground',
-              'transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            )}
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Log out</span>
-            <span className="sr-only sm:hidden">Log out</span>
-          </button>
+          {isDemo ? (
+            <button
+              type="button"
+              onClick={onOpenAuth}
+              aria-haspopup="dialog"
+              aria-expanded={authOpen}
+              className={cn(
+                'flex h-10 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm',
+                'transition-colors hover:bg-primary/90',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              )}
+            >
+              <LogIn className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Sign In / Register</span>
+              <span className="sr-only sm:hidden">Sign in or register</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onLogout}
+              className={cn(
+                'flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground',
+                'transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              )}
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Log out</span>
+              <span className="sr-only sm:hidden">Log out</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
