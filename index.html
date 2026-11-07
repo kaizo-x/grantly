@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#1e2a5a" />
+    <meta
+      name="description"
+      content="GRANTLY — discover, match and manage scholarships with a smart match engine, financial impact calculator and application tracker."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>GRANTLY — Scholarship Discovery &amp; Application Hub</title>
+
+    <!--
+      Applied before first paint so the correct theme is rendered immediately:
+      eliminates both the flash-of-wrong-theme and any resulting layout shift.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('grantly.theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var dark = stored === 'dark' || (stored !== 'light' && stored !== 'dark' && prefersDark);
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (_) {
+          /* localStorage unavailable — fall back to the light theme. */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <div style="padding: 2rem; font-family: system-ui, sans-serif">
+        <h1>GRANTLY requires JavaScript</h1>
+        <p>Please enable JavaScript to use the scholarship discovery and application hub.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

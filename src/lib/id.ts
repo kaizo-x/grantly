@@ -1,0 +1,13 @@
+/**
+ * Collision-resistant id generation.
+ *
+ * Prefers `crypto.randomUUID` (available in all modern browsers over HTTPS and
+ * localhost) and degrades to a timestamp + random suffix elsewhere.
+ */
+export function createId(prefix = 'id'): string {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return `${prefix}_${cryptoApi.randomUUID()}`;
+  }
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
