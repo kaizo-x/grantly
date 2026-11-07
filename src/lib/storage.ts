@@ -35,6 +35,29 @@ const safeStorage: StateStorage = {
 
 export const zustandStorage = createJSONStorage(() => safeStorage);
 
+/* -------------------------------------------------------------------------- */
+/*  Raw string access                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Read/write raw strings through the same guarded adapter.
+ *
+ * The zustand pipeline wraps every value in its own envelope, so plain keys —
+ * such as the auth session registry — need direct access instead.
+ */
+export function readRaw(key: string): string | null {
+  const value = safeStorage.getItem(key);
+  return typeof value === 'string' ? value : null;
+}
+
+export function writeRaw(key: string, value: string): void {
+  safeStorage.setItem(key, value);
+}
+
+export function removeRaw(key: string): void {
+  safeStorage.removeItem(key);
+}
+
 /** Single storage key for the persisted application state. */
 export const APP_STORAGE_KEY = 'grantly.store.v1';
 

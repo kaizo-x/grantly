@@ -1,8 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { Compass, Files, GraduationCap, LayoutDashboard, LayoutList, Sparkles, User } from 'lucide-react';
+import {
+  Compass,
+  Files,
+  GraduationCap,
+  LayoutDashboard,
+  LayoutList,
+  Sparkles,
+  User,
+} from 'lucide-react';
 import type { ViewKey } from '../../types';
+import type { GrantlyUser } from '../../lib/session';
 import { cn } from '../../utils/cn';
+import { monogramFor } from '../../utils/format';
 import { useAppStore } from '../../store/useAppStore';
+import { Avatar } from '../ui/Avatar';
 
 interface NavItem {
   key: ViewKey;
@@ -20,13 +31,15 @@ const NAV_ITEMS: readonly NavItem[] = [
 ];
 
 export interface SidebarNavProps {
+  /** The signed-in user, rendered in the account block. */
+  user: GrantlyUser;
   /** Invoked after a link is activated (used to close the mobile drawer). */
   onNavigate?: () => void;
   className?: string;
 }
 
 /** Primary navigation. Rendered in the desktop rail and the mobile drawer. */
-export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
+export function SidebarNav({ user, onNavigate, className }: SidebarNavProps) {
   const savedIds = useAppStore((state) => state.savedIds);
   const applicationCount = useAppStore((state) => Object.keys(state.applications).length);
   const documentCount = useAppStore((state) => state.documents.length);
@@ -100,14 +113,28 @@ export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
         })}
       </ul>
 
-      <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3.5">
-        <p className="flex items-center gap-2 text-xs font-semibold text-sidebar-foreground">
-          <Sparkles className="size-3.5" aria-hidden="true" />
-          Essay Coach
-        </p>
-        <p className="mt-1 text-[11px] leading-relaxed text-sidebar-foreground/70">
-          Draft a structured outline from any scholarship prompt in seconds.
-        </p>
+      <div className="flex flex-col gap-3">
+        {/* Signed-in identity. The sign-out control lives in the top bar so it
+            stays reachable at every viewport. */}
+        <div className="flex items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3.5">
+          <Avatar monogram={monogramFor(user.name)} hue={243} size="sm" />
+          <span className="flex min-w-0 flex-col leading-tight">
+            <span className="block truncate text-xs font-semibold text-sidebar-foreground">{user.name}</span>
+            <span className="block truncate text-[11px] text-sidebar-foreground/60">
+              {user.isDemo ? 'Judge demo profile' : user.educationLevel}
+            </span>
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3.5">
+          <p className="flex items-center gap-2 text-xs font-semibold text-sidebar-foreground">
+            <Sparkles className="size-3.5" aria-hidden="true" />
+            Essay Coach
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-sidebar-foreground/70">
+            Draft a structured outline from any scholarship prompt in seconds.
+          </p>
+        </div>
       </div>
     </nav>
   );

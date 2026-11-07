@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Compass, Files, GraduationCap, LayoutDashboard, LayoutList, User, X } from 'lucide-react';
+import type { GrantlyUser } from '../../lib/session';
 import { cn } from '../../utils/cn';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useScrollLock } from '../../hooks/useScrollLock';
@@ -16,11 +17,18 @@ const MOBILE_LINKS = [
   { to: '/profile', label: 'Profile Hub', icon: User },
 ] as const;
 
+export interface AppShellProps {
+  /** The signed-in user, surfaced in the sidebar identity block. */
+  user: GrantlyUser;
+  /** Clears the session key and returns the app to the Auth Gateway. */
+  onLogout: () => void;
+}
+
 /**
  * Root layout: a persistent sapphire rail on desktop, a focus-trapped drawer on
  * mobile, plus the sticky top bar and the main content landmark.
  */
-export function AppShell() {
+export function AppShell({ user, onLogout }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useFocusTrap<HTMLDivElement>(drawerOpen);
   useScrollLock(drawerOpen);
@@ -50,7 +58,7 @@ export function AppShell() {
 
       {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
-        <SidebarNav />
+        <SidebarNav user={user} />
       </aside>
 
       {/* Mobile drawer */}
@@ -93,7 +101,7 @@ export function AppShell() {
                 <X className="size-5" aria-hidden="true" />
               </button>
               <div className="mt-10 flex-1 overflow-y-auto">
-                <SidebarNav onNavigate={() => setDrawerOpen(false)} />
+                <SidebarNav user={user} onNavigate={() => setDrawerOpen(false)} />
               </div>
             </motion.aside>
           </div>
@@ -101,7 +109,7 @@ export function AppShell() {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar navOpen={drawerOpen} onToggleNav={() => setDrawerOpen((open) => !open)} />
+        <TopBar navOpen={drawerOpen} onToggleNav={() => setDrawerOpen((open) => !open)} onLogout={onLogout} />
 
         <main
           id="main-content"

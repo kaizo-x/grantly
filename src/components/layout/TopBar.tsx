@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Clock, Menu, Search, X } from 'lucide-react';
+import { Bell, Clock, LogOut, Menu, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppStore } from '../../store/useAppStore';
 import { useScoredScholarships } from '../../hooks/useScholarships';
@@ -13,13 +13,15 @@ import { Avatar } from '../ui/Avatar';
 export interface TopBarProps {
   navOpen: boolean;
   onToggleNav: () => void;
+  /** Clears the session and returns the visitor to the Auth Gateway. */
+  onLogout: () => void;
 }
 
 /**
  * Sticky application header: global search, notification centre, theme control
- * and a profile quick-view affordance.
+ * and the profile / sign-out affordances.
  */
-export function TopBar({ navOpen, onToggleNav }: TopBarProps) {
+export function TopBar({ navOpen, onToggleNav, onLogout }: TopBarProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -202,6 +204,21 @@ export function TopBar({ navOpen, onToggleNav }: TopBarProps) {
               </span>
             </span>
           </Link>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className={cn(
+              'flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground',
+              'transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            )}
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Log out</span>
+            <span className="sr-only sm:hidden">Log out</span>
+          </button>
         </div>
       </div>
     </header>

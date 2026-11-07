@@ -1,13 +1,16 @@
-import { lazy, Suspense, useCallback, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AlertTriangle, RefreshCw, RotateCcw, Sparkles } from 'lucide-react';
 import { AppShell } from './components/layout/AppShell';
+import { AuthGateway } from './components/auth/AuthGateway';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { EssayAssistant } from './components/assistant/EssayAssistant';
 import { Button } from './components/ui/Button';
 import { Toaster } from './components/ui/Toaster';
 import { Skeleton, SkeletonGrid } from './components/ui/Skeleton';
+import { useAppStore } from './store/useAppStore';
 import { useAssistantStore } from './store/useAssistantStore';
+import { clearSession, readSession, type GrantlyUser } from './lib/session';
 import { cn } from './utils/cn';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -157,66 +160,100 @@ function RootFallback(reset: () => void): ReactNode {
 }
 
 /**
- * GRANTLY application root: routing, layout shell, global overlays and the
- * single toast portal. The whole tree sits behind a root error boundary so no
- * runtime failure can ever leave the user staring at a blank document.
+ * GRANTLY application root.
+ *
+ * The persisted session is the single source of truth for what renders: a
+ * visitor with no `grantly_user_session` key sees only the Auth Gateway, while
+ * a signed-in student gets the routed dashboard shell. The whole tree sits
+ * behind a root error boundary so no runtime failure can ever leave the user
+ * staring at a blank document.
  */
 export default function App() {
+  // Resolve the session before the first paint so the correct surface is
+  // committed immediately — no flash of the dashboard for a new visitor.
+  const [user, setUser] = useState<GrantlyUser | null>(() => readSession());
+  const updateProfile = useAppStore((state) => state.updateProfile);
+
+  const handleAuthenticated = useCallback(
+    (next: GrantlyUser) => {
+      // Keep the profile hub in step with whoever just signed in.
+      updateProfile({
+        fullName: next.name,
+        email: next.email,
+        educationLevel: next.educationLevel,
+        annualFamilyIncome: next.annualFamilyIncome,
+      });
+      setUser(next);
+    },
+    [updateProfile],
+  );
+
+  /** Clear the session key and fall straight back to the Auth Gateway. */
+  const handleLogout = useCallback(() => {
+    clearSession();
+    setUser(null);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
+
   return (
     <ErrorBoundary sectionName="GRANTLY" fallback={RootFallback}>
-      <BrowserRouter>
-        <RouteChangeManager />
+      {user ? (
+        <BrowserRouter>
+          <RouteChangeManager />
 
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route
-              index
-              element={
-                <View name="Dashboard">
-                  <DashboardPage />
-                </View>
-              }
-            />
-            <Route
-              path="discover"
-              element={
-                <View name="Discover scholarships">
-                  <DiscoveryPage />
-                </View>
-              }
-            />
-            <Route
-              path="tracker"
-              element={
-                <View name="Application tracker">
-                  <TrackerPage />
-                </View>
-              }
-            />
-            <Route
-              path="documents"
-              element={
-                <View name="Document locker">
-                  <DocumentsPage />
-                </View>
-              }
-            />
-            <Route
-              path="profile"
-              element={
-                <View name="Profile hub">
-                  <ProfilePage />
-                </View>
-              }
-            />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
+          <Routes>
+            <Route element={<AppShell user={user} onLogout={handleLogout} />}>
+              <Route
+                index
+                element={
+                  <View name="Dashboard">
+                    <DashboardPage />
+                  </View>
+                }
+              />
+              <Route
+                path="discover"
+                element={
+                  <View name="Discover scholarships">
+                    <DiscoveryPage />
+                  </View>
+                }
+              />
+              <Route
+                path="tracker"
+                element={
+                  <View name="Application tracker">
+                    <TrackerPage />
+                  </View>
+                }
+              />
+              <Route
+                path="documents"
+                element={
+                  <View name="Document locker">
+                    <DocumentsPage />
+                  </View>
+                }
+              />
+              <Route
+                path="profile"
+                element={
+                  <View name="Profile hub">
+                    <ProfilePage />
+                  </View>
+                }
+              />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
 
-        <AssistantLauncher />
-        <EssayAssistant />
-        <Toaster />
-      </BrowserRouter>
+          <AssistantLauncher />
+          <EssayAssistant />
+          <Toaster />
+        </BrowserRouter>
+      ) : (
+        <AuthGateway onAuthenticated={handleAuthenticated} />
+      )}
     </ErrorBoundary>
   );
 }
